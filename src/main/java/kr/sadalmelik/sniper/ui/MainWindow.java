@@ -33,4 +33,8 @@ public class MainWindow extends JFrame {
         result.setBorder(new LineBorder(Color.black));
         return result;
     }
+
+    public void showStatus(String status){
+        sniperStatus.setText(status);
+    }
 }

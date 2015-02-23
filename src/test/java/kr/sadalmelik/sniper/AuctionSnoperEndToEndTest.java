@@ -3,9 +3,6 @@ package kr.sadalmelik.sniper;
 import org.junit.After;
 import org.junit.Test;
 
-/**
- * Created by SejongPark on 15. 2. 9..
- */
 public class AuctionSnoperEndToEndTest {
     private final FakeAuctionServer auction = new FakeAuctionServer("item-54321");
     private final ApplicationRunner application = new ApplicationRunner();
