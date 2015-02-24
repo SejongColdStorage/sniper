@@ -1,5 +1,6 @@
 package kr.sadalmelik.sniper;
 
+import org.hamcrest.Matcher;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.Message;
 
@@ -19,9 +20,8 @@ public class FakeAuctionServer {
     public static final String AUCTION_PASSWORD = "auction";
     private final String itemId;
     private final XMPPConnection connection;
-    private Chat currentChat;
-
     private final SingleMessageListener messageListener = new SingleMessageListener();
+    private Chat currentChat;
 
 
     public FakeAuctionServer(String itemId) {
@@ -41,13 +41,27 @@ public class FakeAuctionServer {
         });
     }
 
-    public void hasReceivedJoinRequestFromSniper() throws InterruptedException {
-        messageListener.receiveAMessage();
+    public void reportPrice(int price, int increment, String bidder) throws XMPPException {
+        currentChat.sendMessage(String.format(
+                        "SQLVersion: 1.1; Event: PRICE; CurrentPrice : %d; Increment: %d; Bidder: %s",
+                        price,
+                        increment,
+                        bidder)
+        );
+    }
+
+    public void hasReceivedBid(int bid, String sniperId) throws InterruptedException {
+        messageListener.receiveAMessageMatching(sniperId, is(String.format(Main.BID_COMMAND_FORMAT)));
+    }
+
+    public void hasReceivedJoinRequestFrom(String sniperId) throws InterruptedException {
+        messageListener.receiveAMessageMatching(sniperId, is(Main.JOIN_COMMAND_FORMAT));
     }
 
     public void announceClosed() throws XMPPException {
         currentChat.sendMessage(new Message());
     }
+
 
     public void stop() {
         connection.disconnect();
@@ -58,7 +72,6 @@ public class FakeAuctionServer {
         return itemId;
     }
 
-
     public class SingleMessageListener implements MessageListener {
         private final ArrayBlockingQueue<Message> messages = new ArrayBlockingQueue<Message>(1);
 
@@ -67,8 +80,11 @@ public class FakeAuctionServer {
             messages.add(message);
         }
 
-        public void receiveAMessage() throws InterruptedException {
-            assertThat("Message", messages.poll(5, TimeUnit.SECONDS), is(notNullValue()));
+        public void receiveAMessageMatching(String sniperId, Matcher<? super String> messageMatcher) throws
+                InterruptedException {
+            final Message message = messages.poll(5, TimeUnit.SECONDS);
+            assertThat("Message", message, is(notNullValue()));
+            assertThat(message.getBody(), messageMatcher);
         }
     }
 
